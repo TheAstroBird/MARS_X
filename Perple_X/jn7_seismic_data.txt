@@ -1,0 +1,37 @@
+
+Seismic wavespeed computational options:
+
+    bounds                  VRH       [VRH] HS
+    vrh/hs_weighting        0.5       [0.5] 0->1
+    explicit_bulk_modulus   T         [T] F
+    poisson_ratio           on        [on] all off; Poisson ratio = 0.35
+    seismic_output          som       [some] none all
+    poisson_test            F         [F] T
+    Anderson-Gruneisen      F         [F] T
+    Tisza_test              F         [F] T
+    fluid_shear_modulus     T         [T] F
+    phi_d                   0.36      [0.36] 0->1
+
+In the tables below: implicit moduli are calculated rigorously from the EoS,
+explicit moduli are computed from empirical functions provided in the
+thermodynamic data file.
+
+
+Endmembers and stoichiometric compounds:
+
+                      Bulk Mod    Shear Mod 
+                      ---------   ---------
+        Cu            implicit    Poisson                  
+        Cv            implicit    Poisson                  
+        Cpr           implicit    Poisson                  
+        Py            implicit    Poisson                  
+        Tn            implicit    Poisson                  
+        Mag           implicit    Poisson                  
+        Ni            implicit    Poisson                  
+        Bn            implicit    Poisson                  
+        Bsn           implicit    Poisson                  
+        Cc            implicit    Poisson                  
+        Ccp           implicit    Poisson                  
+        Hem           implicit    Poisson                  
+        Po            implicit    Poisson                  
+        Fe            implicit    Poisson                  

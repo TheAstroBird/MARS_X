@@ -1,0 +1,40 @@
+
+--------------------------------------------------------------------------------
+
+
+Problem title: Test Problem 7 modified for a fixed bulk composition (1 mol Cu, 2 mol Fe, 0.5 mol Ni, see jn7.dat)                                                                
+
+Thermodynamic data base from: SUPCRT last revision 10/93.                                                     
+
+Independently constrained potentials:
+
+   mu_S2    mu_O2    T(K)     P(bars) 
+
+Components with unconstrained potentials:
+
+   Cu      Fe      Ni   
+
+Phases and (projected) composition with respect to Fe    and Ni   :
+
+ Cu       0.000  0.000      Cv       0.000  0.000      Cpr      0.000  0.000
+ Py       1.000  0.000      Tn       0.000  0.000      Mag      1.000  0.000
+ Ni       0.000  1.000      Bn       0.167  0.000      Bsn      0.000  1.000
+ Cc       0.000  0.000      Ccp      0.500  0.000      Hem      1.000  0.000
+ Po       1.000  0.000      Fe       1.000  0.000
+
+Excluded phases:
+
+ Frs-Ox  
+
+--------------------------------------------------------------------------------
+
+
+ Stable assemblages identified by assemblage index:
+
+   1 - Cu Ni Fe 
+   2 - Cu Mag Ni 
+   3 - Cu Ni Po 
+   4 - Ni Cc Po 
+   5 - Mag Ni Cc 
+   6 - Ni Bn Po 
+   7 - Mag Ni Bn 
