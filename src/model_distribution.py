@@ -1,17 +1,17 @@
 # Данная программа строит распределения для всей планеты для моделей внутреннего строения Марса
+import math as m
 import numpy as np
 import scipy.integrate as ing
 import scipy.interpolate as inp
 import scipy.optimize as opt
-import math as m
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # ----------------------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------------------
 
-# основное тело программы
+# Главное тело программы
 
 # ----------------------------------------------------------------------------------------
 
@@ -74,12 +74,12 @@ if GRAPH:
 # Чтение внешних данных
 
 print('\nПолучение доступа к внешним данным...')
-DATAsIN = pd.read_excel("../data/dynamic/integral_param.xlsx")
-den_crust_const = DATAsIN['crust density'][0] # г/см3
-den_core_const = DATAsIN['core density'][0]
-depth_crust_const = DATAsIN['crust depth'][0] # км
-sulf = DATAsIN['core sulfur'][0] # молекулярная концентрация, максимально 1
-hydr = DATAsIN['core hydro'][0]
+DATAsIN = pd.read_excel("../data/dynamic/input_param.xlsx")
+den_crust_const = DATAsIN['crust density'].iloc[-1] # г/см3
+den_core_const = DATAsIN['core density'].iloc[-1]
+depth_crust_const = DATAsIN['crust depth'].iloc[-1] # км
+sulf = DATAsIN['core sulfur'].iloc[-1] # молекулярная концентрация, максимально 1
+hydr = DATAsIN['core hydro'].iloc[-1]
 if (sulf + hydr) > 1:
     print('ОШИБКА! Суммарное содержание серы и водорода превышает 100%')
     exit()
@@ -89,7 +89,7 @@ x_fe = ferrum*55.85/mix
 x_fes = sulf*87.92/mix
 x_feh = hydr*56.86/mix
 
-DATAs_perplex = pd.read_excel('../data/dynamic/mantle_distr.xlsx')
+DATAs_perplex = pd.read_excel('../data/dynamic/mantle_distributions.xlsx')
 
 # Построение распределений с глубиной
 
@@ -105,17 +105,12 @@ depth_crust_const /= R_Mars
 rad_core_const /= R_Mars
 P_const = 3*Gravity_const*M_Mars**2/(4*m.pi*R_Mars**4) * 1e-21
 T_exp_const = 3e-5*Gravity_const*M_Mars/5e6/R_Mars**2/1e2
-n_grid = 10000 # деление сетки в мантии (определяет максимальный шаг)
+n_grid = 10000 # деление сетки (определяет максимальный шаг)
 t_core_bound = 0.02 # точка остановки в ядре (определяет предел интегрирования, дальше плотность полагается постоянной)
 grid_step = 1 / n_grid
 distr_numeric = {'density': [], 'radius': [1], 'mass': [1], 'pressure': [0], 'temperature': [300]}
 DATAs_perplex['density'] /= den_av*1e3
 DATAs_perplex['pressure'] /= 1e4
-
-# 1 - в коре
-print('Расчет коры...')
-distr_numeric['density'].append(den_crust_const)
-
 class system15:
     def __init__(self, dens, temp):
         self.dens = dens
@@ -127,16 +122,19 @@ class system15:
         der3 = self.temp(t, y)
         return [der1, der2, der3]
 
+# 1 - в коре
+print('Расчет коры...')
+distr_numeric['density'].append(den_crust_const)
 def den_crust_func(t, y):
     return den_crust_const
 def temp_crust_func(t, y):
-    fun0 = inp.interp1d(list(DATAs_perplex['pressure']), list(DATAs_perplex['temperature']),
+    fun0 = inp.interp1d(DATAs_perplex['pressure'], DATAs_perplex['temperature'],
                         fill_value='extrapolate')
     fun = inp.interp1d([1-depth_crust_const,1], [float(fun0(y[1])), 300])
     return float(fun(t))
 
-sys15_crust = system15(den_crust_func, lambda t, y: 0)
-crust_distr = ing.RK45(sys15_crust, 1, [1, 0, 0], 1-depth_crust_const)
+sys15_crust = system15(den_crust_func, lambda t, y: 0) # температура считается интерполяцией, а не из диф. уравнения
+crust_distr = ing.RK45(sys15_crust, 1, [1, 0, 300], 1-depth_crust_const, max_step=grid_step)
 while crust_distr.status == 'running':
     crust_distr.step()
     distr_numeric['radius'].append(crust_distr.t)
@@ -155,13 +153,14 @@ def temp_mantle_func(t, y):
     fun = inp.interp1d(DATAs_perplex['pressure'], DATAs_perplex['temperature'], fill_value='extrapolate')
     return float(fun(y[1]))
 
-distr_numeric['radius'].append(distr_numeric['radius'][-1])
+distr_numeric['radius'].append(distr_numeric['radius'][-1] - grid_step**2)
 distr_numeric['density'].append(den_mantle_func(distr_numeric['radius'][-1],
-                                                [distr_numeric['mass'][-1], distr_numeric['pressure'][-1],
+                                                [distr_numeric['mass'][-1], distr_numeric['pressure'][-1] * (1+grid_step**2),
                                                     distr_numeric['temperature'][-1]]))
 distr_numeric['mass'].append(distr_numeric['mass'][-1])
-distr_numeric['pressure'].append(distr_numeric['pressure'][-1])
+distr_numeric['pressure'].append(distr_numeric['pressure'][-1] * (1+grid_step**2))
 distr_numeric['temperature'].append(distr_numeric['temperature'][-1])
+
 sys15_mantle = system15(den_mantle_func, lambda t, y: 0) # температура считается интерполяцией, а не из диф. уравнения
 mantle_distr = ing.RK45(sys15_mantle, distr_numeric['radius'][-1],
                         [distr_numeric['mass'][-1], distr_numeric['pressure'][-1], distr_numeric['temperature'][-1]],
@@ -215,16 +214,16 @@ def den_core_func(t, y):
 def temp_core_func(t, y):
     return T_exp_const*y[0]*y[2]/t**2
 
-distr_core = {'density': [den_core_func(distr_numeric['radius'][-1],
-                                        [distr_numeric['mass'][-1], distr_numeric['pressure'][-1],
+distr_core = {'density': [den_core_func(distr_numeric['radius'][-1] - grid_step**2,
+                                        [distr_numeric['mass'][-1], distr_numeric['pressure'][-1] * (1+grid_step**2),
                                             distr_numeric['temperature'][-1]])],
-              'radius': [distr_numeric['radius'][-1]],
+              'radius': [distr_numeric['radius'][-1] - grid_step**2],
               'mass': [distr_numeric['mass'][-1]],
-              'pressure': [distr_numeric['pressure'][-1]],
+              'pressure': [distr_numeric['pressure'][-1] * (1+grid_step**2)],
               'temperature': [distr_numeric['temperature'][-1]]}
 sys15_core = system15(den_core_func, temp_core_func)
-core_distr = ing.RK45(sys15_core, distr_numeric['radius'][-1],
-                        [distr_numeric['mass'][-1], distr_numeric['pressure'][-1], distr_numeric['temperature'][-1]],
+core_distr = ing.RK45(sys15_core, distr_core['radius'][-1],
+                        [distr_core['mass'][-1], distr_core['pressure'][-1], distr_core['temperature'][-1]],
                         t_core_bound)
 
 while core_distr.status == 'running':
@@ -272,15 +271,15 @@ while mantle_distr.status == 'running':
 steps_in_core = [np.inf, grid_step]
 for i in range(len(steps_in_core)):
     print(f'Подбор радиуса ядра - шаг {i+1}/2...')
-    distr_core = {'density': [den_core_func(distr_numeric['radius'][-1],
-                                            [distr_numeric['mass'][-1], distr_numeric['pressure'][-1],
+    distr_core = {'density': [den_core_func(distr_numeric['radius'][-1] - grid_step**2,
+                                            [distr_numeric['mass'][-1], distr_numeric['pressure'][-1] * (1+grid_step**2),
                                              distr_numeric['temperature'][-1]])],
-                  'radius': [distr_numeric['radius'][-1]],
+                  'radius': [distr_numeric['radius'][-1] - grid_step**2],
                   'mass': [distr_numeric['mass'][-1]],
-                  'pressure': [distr_numeric['pressure'][-1]],
+                  'pressure': [distr_numeric['pressure'][-1] * (1+grid_step**2)],
                   'temperature': [distr_numeric['temperature'][-1]]}
-    core_distr = ing.RK45(sys15_core, distr_numeric['radius'][-1],
-                            [distr_numeric['mass'][-1], distr_numeric['pressure'][-1], distr_numeric['temperature'][-1]],
+    core_distr = ing.RK45(sys15_core, distr_core['radius'][-1],
+                            [distr_core['mass'][-1], distr_core['pressure'][-1], distr_core['temperature'][-1]],
                             t_core_bound, max_step=steps_in_core[i])
 
     while core_distr.status == 'running':
@@ -324,15 +323,15 @@ for i in range(len(steps_in_core)):
                 distr_numeric['temperature'].append(temp_mantle_func(mantle_distr.t, mantle_distr.y))
 
         distr_core_prev = distr_core
-        distr_core = {'density': [den_core_func(distr_numeric['radius'][-1],
-                                                [distr_numeric['mass'][-1], distr_numeric['pressure'][-1],
+        distr_core = {'density': [den_core_func(distr_numeric['radius'][-1] - grid_step**2,
+                                                [distr_numeric['mass'][-1], distr_numeric['pressure'][-1] * (1+grid_step**2),
                                                  distr_numeric['temperature'][-1]])],
-                      'radius': [distr_numeric['radius'][-1]],
+                      'radius': [distr_numeric['radius'][-1] - grid_step**2],
                       'mass': [distr_numeric['mass'][-1]],
-                      'pressure': [distr_numeric['pressure'][-1]],
+                      'pressure': [distr_numeric['pressure'][-1] * (1+grid_step**2)],
                       'temperature': [distr_numeric['temperature'][-1]]}
-        core_distr = ing.RK45(sys15_core, distr_numeric['radius'][-1],
-                              [distr_numeric['mass'][-1], distr_numeric['pressure'][-1], distr_numeric['temperature'][-1]],
+        core_distr = ing.RK45(sys15_core, distr_core['radius'][-1],
+                              [distr_core['mass'][-1], distr_core['pressure'][-1], distr_core['temperature'][-1]],
                               t_core_bound, max_step=steps_in_core[i])
 
         while core_distr.status == 'running':
@@ -346,10 +345,10 @@ for i in range(len(steps_in_core)):
         distr_core['radius'].append(0)
         distr_core['density'].append(distr_core['density'][-1])
         distr_core['mass'].append(distr_core['mass'][-1] - distr_core['density'][-1] * t_core_bound ** 3)
-        distr_core['pressure'].append(
-            distr_core['pressure'][-1] + P_const * (distr_core['density'][-1] * t_core_bound) ** 2 / 2)
-        distr_core['temperature'].append(
-            distr_core['temperature'][-1] * m.exp(T_exp_const * distr_core['density'][-1] * t_core_bound ** 2 / 2))
+        distr_core['pressure'].append(distr_core['pressure'][-1] +
+                                      P_const * (distr_core['density'][-1] * t_core_bound) ** 2 / 2)
+        distr_core['temperature'].append(distr_core['temperature'][-1] *
+                                         m.exp(T_exp_const * distr_core['density'][-1] * t_core_bound ** 2 / 2))
 
         l_to_core = len(distr_numeric['radius'])
         print(l_to_core, ' ', distr_core['mass'][-1])
@@ -380,9 +379,9 @@ distr_numeric['shear velocity'] = [4.0] * l_crust
 
 # 2 - в мантии
 print('Расчет волн в мантии...')
-vel_p_mantle_func = inp.interp1d(list(DATAs_perplex['pressure']), list(DATAs_perplex['compressional velocity']),
+vel_p_mantle_func = inp.interp1d(DATAs_perplex['pressure'], DATAs_perplex['compressional velocity'],
                                  fill_value='extrapolate')
-vel_s_mantle_func = inp.interp1d(list(DATAs_perplex['pressure']), list(DATAs_perplex['shear velocity']),
+vel_s_mantle_func = inp.interp1d(DATAs_perplex['pressure'], DATAs_perplex['shear velocity'],
                                  fill_value='extrapolate')
 for i in range(l_crust, l_to_core):
     distr_numeric['compr velocity'].append(vel_p_mantle_func(distr_numeric['pressure'][i]))
@@ -493,20 +492,14 @@ if GRAPH:
 print('Запись данных в файл...')
 
 distr_numeric['gravity'] = []
-r_core_bound = t_core_bound * R_Mars
 for i in range(l_planet-1):
     distr_numeric['gravity'].append(Gravity_const*distr_numeric['mass'][i] / (distr_numeric['radius'][i]*1e3)**2)
 distr_numeric['gravity'].append(0)
-"""
-DATA_grid.append([round(numpy.interp(P_grid[0]-P_4, P_grid[0]-P_grid[:], range(n_grid))),
-                  round(numpy.interp(P_grid[0]-P_3, P_grid[0]-P_grid[:], range(n_grid))),
-                  round(numpy.interp(P_grid[0]-P_2, P_grid[0]-P_grid[:], range(n_grid))),
-                  round(numpy.interp(P_grid[0]-P_1, P_grid[0]-P_grid[:], range(n_grid)))])
-"""
+
 DATAs = pd.DataFrame(distr_numeric)
 DATAs.to_excel("../data/dynamic/model_distributions.xlsx", index=False)
 
 DATAsIN['core radius'] = [distr_numeric['radius'][l_to_core]]
-DATAsIN.to_excel("../data/dynamic/integral_param.xlsx", index=False)
+DATAsIN.to_excel("../data/dynamic/input_param.xlsx", index=False)
 
 print('Программа выполнена')

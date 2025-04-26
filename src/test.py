@@ -1,8 +1,7 @@
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-DATAs_perplex = pd.read_excel('../data/dynamic/mantle_distr.xlsx')
+d = {'1': '2', '3': '4', '5': '6'}
+print(' '.join(d.values()))
 
-plt.figure()
-plt.plot(DATAs_perplex['pressure'], DATAs_perplex['temperature'])
-plt.show()

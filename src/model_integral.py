@@ -1,114 +1,10 @@
 # Данная программа считает интегральные параметры для построенной модели внутреннего строения Марса
-"""import math
+import math as m
 import pandas as pd
 import numpy as np
-import scipy as sp
-import matplotlib.pyplot as plt
-
-# Нахождение массы планеты методом трапеций
-def mass(den=[], rad=[], dif=[]):
-    m = 0
-    for i in range(len(dif)):
-        m += (den[i]*rad[i]**2 + den[i+1]*rad[i+1]**2) * 2 * math.pi * dif[i]
-    return m
-
-# Нахождение момента инерции планеты методом трапеций
-def inertia(den=[], rad=[], dif=[]):
-    I = 0
-    for i in range(len(dif)):
-        I += (den[i]*rad[i]**4 + den[i+1]*rad[i+1]**4) * 4 / 3 * math.pi * dif[i]
-    return I
-
-# Нахождение числа Лява k2 - правая часть СДУ
-def RHS(n, ie, den, rad, lame1, lame2, grav, zs=[]):
-    f = [0, 0, 0, 0, 0, 0]
-    for d in range(6):
-        f[d] = zs[d]
-    f[0] = - 2*lame1/(lame1+2*lame2)*zs[0]/rad + zs[1]/(lame1+2*lame2) + lame1*n*(n+1)/(lame1+2*lame2)*zs[4]/rad
-    f[1] = ( (-4*den*grav*rad+4*lame2*(3*lame1+2*lame2)/(lame1+2*lame2))*zs[0]/(rad**2)
-             - 4*lame2/(lame1+2*lame2)*zs[1]/rad
-             + (n*(n+1)*den*grav*rad-2*n*(n+1)*lame2*(3*lame1+2*lame2)/(lame1+2*lame2))*zs[4]/(rad**2) + n*(n+1)/rad*zs[5]
-             - den*zs[3] )
-    f[2] = 3*den*zs[0] + zs[3]
-    f[3] = - 3*n*(n+1)*den/rad*zs[4] + n*(n+1)/(rad**2)*zs[2] - 2/rad*zs[3]
-    f[4] = - zs[0]/rad + zs[4]/rad + zs[5]/lame2
-    f[5] = ( (den*grav/rad-2*lame2*(3*lame1+2*lame2)/(lame1+2*lame2)/(rad**2))*zs[0] - lame1/(lame1+2*lame2)*zs[1]/rad
-             + 2*lame2/(lame1+2*lame2)*((2*n**2+2*n-1)*lame1+2*(n**2+n-1)*lame2)*zs[4]/(rad**2) - 3*zs[5]/rad - den*zs[2]/rad )
-    return f[ie]
-
-
-# Нахождение числа Лява k2 - СДУ
-def SDE(n, i_core, z0=[], den=[], rad=[], dif=[], lame1=[], lame2=[], grav=[]):
-    z = [0, 0, 0, 0, 0, 0]
-    zs = [0, 0, 0, 0, 0, 0]
-    zsint = [0, 0, 0, 0, 0, 0]
-    k1 = [0, 0, 0, 0, 0, 0]
-    k2 = [0, 0, 0, 0, 0, 0]
-    k3 = [0, 0, 0, 0, 0, 0]
-    k4 = [0, 0, 0, 0, 0, 0]
-    for d in range(6):
-        z[d] = z0[d]
-    for i in range(i_core + 1, len(rad)-1):
-        for d in range(6):
-            zs[d] = z[d]
-            zsint[d] = z[d]
-        for d1 in range(6):
-            k1[d1] = RHS(n, d1, den[i], rad[i], lame1[i], lame2[i], grav[i], zsint)
-        for j in range(6):
-            zsint[j] = zs[j]+dif[i]/2*k1[j]
-        for d1 in range(6):
-            k2[d1] = RHS(n, d1, (den[i]+den[i+1])/2, (rad[i]+rad[i+1])/2, (lame1[i]+lame1[i+1])/2, (lame2[i]+lame2[i+1])/2,
-                 (grav[i]+grav[i+1])/2, zsint)
-        for j in range(6):
-            zsint[j] = zs[j]+dif[i]/2*k2[j]
-        for d1 in range(6):
-            k3[d1] = RHS(n, d1, (den[i]+den[i+1])/2, (rad[i]+rad[i+1])/2, (lame1[i]+lame1[i+1])/2, (lame2[i]+lame2[i+1])/2,
-                 (grav[i]+grav[i+1])/2, zsint)
-        for j in range(6):
-            zsint[j] = zs[j]+dif[i]*k3[j]
-        for d1 in range(6):
-            k4[d1] = RHS(n, d1, den[i+1], rad[i+1], lame1[i+1], lame2[i+1], grav[i+1], zsint)
-        for j in range(6):
-            z[j] += dif[i]*(k1[j]+2*k2[j]+2*k3[j]+k4[j])/6
-    return z
-
-
-# Нахождение числа Лява k2
-def Love(load, n, i_core, gamma, love=[], den=[], rad=[], dif=[], lame1=[], lame2=[], grav=[]):
-    # инициируем начальные векторы
-    z1 = [1, den[i_core] * grav[i_core], 0, -3 * den[i_core], 0, 0]
-    z2 = [0, -den[i_core], 1, n / rad[i_core] + gamma, 0, 0]
-    z3 = [0, 0, 0, 0, 1, 0]
-
-    # прогоним векторы через СДУ
-    z1 = SDE(n, i_core, z1, den, rad, dif, lame1, lame2, grav)
-    z2 = SDE(n, i_core, z2, den, rad, dif, lame1, lame2, grav)
-    z3 = SDE(n, i_core, z3, den, rad, dif, lame1, lame2, grav)
-
-    # решим уравнения на поверхности методом Гаусса
-    A = [[z1[5], z2[5], z3[5]], [z1[1], z2[1], z3[1]], [z1[3]+(n+1)*z1[2], z2[3]+(n+1)*z2[2], z3[3]+(n+1)*z3[2]]]
-    b = [0, 0, 2*n+1]
-    if load:
-        b[1] = -(2*n+1)/3
-    for i in range(1, 3):
-        A[1][i] -= A[0][i] * A[1][0] / A[0][0]
-        A[2][i] -= A[0][i] * A[2][0] / A[0][0]
-    A[2][2] -= A[1][2] * A[2][1] / A[1][1]
-    b[2] -= b[1] * A[2][1] / A[1][1]
-    b[2] /= A[2][2]
-    b[1] -= b[2] * A[1][2]
-    b[1] /= A[1][1]
-    b[0] -= b[1] * A[0][1] + b[2] * A[0][2]
-    b[0] /= A[0][0]
-
-    # и само число Лява k2
-    if love == 'k':
-        lov = b[0]*z1[2] + b[1]*z2[2] + b[2]*z3[2] - 1
-    elif love == 'h':
-        lov = b[0] * z1[0] + b[1] * z2[0] + b[2] * z3[0]
-    elif love == 'l':
-        lov = b[0] * z1[4] + b[1] * z2[4] + b[2] * z3[4]
-    return lov
+import scipy.integrate as ing
+import scipy.interpolate as inp
+import scipy.linalg as lin
 
 # --------------------------------------------------------------------------------
 
@@ -118,189 +14,429 @@ def Love(load, n, i_core, gamma, love=[], den=[], rad=[], dif=[], lame1=[], lame
 
 # Режим работы программы
 
-VISCOSITY = True
-MELTLAYER = False
-CREEPFUNCTION = False
+AUTO = False
+if input('\nДля запуска кода нажмите ввод:\n') == 'Y':
+    AUTO = True
+    print('Включен режим задвоения ввода (необходим для автоматической обратки программы)\n')
+
+VISCOSITY = False
+print('При расчете учитывать неупругость? (Y или N)')
+while True:
+    s = input()
+    if AUTO:
+        print(s)
+    if s == "Y" or s == "y":
+        VISCOSITY = True
+        break
+    elif s == "N" or s == "n":
+        break
+    else:
+        print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
+if VISCOSITY:
+    DW85 = False
+    print("\nВведите обозначение рассматриваемой химической модели (напр., DW85):")
+    s = input()
+    if AUTO:
+        print(s)
+    if 'DW' in s:
+        DW85 = True
+    MELTLAYER = False
+    print('\nУчитьвать наличие расплавленного слоя? (Y или N)')
+    while True:
+        s = input()
+        if AUTO:
+            print(s)
+        if s == "Y" or s == "y":
+            MELTLAYER = True
+            break
+        elif s == "N" or s == "n":
+            break
+        else:
+            print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
+    CREEPFUNCTION = False
+    print('\nДополнительно посчитать неупругий вклад в чандлеровской период с использованием функции крипа? (Y или N)')
+    while True:
+        s = input()
+        if AUTO:
+            print(s)
+        if s == "Y" or s == "y":
+            CREEPFUNCTION = True
+            break
+        elif s == "N" or s == "n":
+            break
+        else:
+            print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
 REWRITEFILE = False
+print('\nПерезаписать файл integral_parameters.xlsx? (Y или N)')
+while True:
+    s = input()
+    if AUTO:
+        print(s)
+    if s == "Y" or s == "y":
+        REWRITEFILE = True
+        break
+    elif s == "N" or s == "n":
+        break
+    else:
+        print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
 
-# Вводим данные
+# Чтение внешних данных
+print('\nЧтение внешних данных...')
+distr_numeric = pd.read_excel("../data/dynamic/model_distributions.xlsx")
+param_integral = pd.read_excel("../data/dynamic/input_param.xlsx")
+if VISCOSITY and DW85:
+    distr_mineral = pd.read_excel("../data/dynamic/mineral_distributions.xlsx")
 
-n = 2
-DATAs = pd.read_excel("datas/Mars_datas.xlsx")
-n_grid = DATAs.shape[0] - 2
-rad = np.zeros(n_grid)
-den = np.zeros(n_grid)
-v_p = np.zeros(n_grid)
-v_s = np.zeros(n_grid)
-grav = np.zeros(n_grid)
-for i in range(n_grid):
-    rad[i] = DATAs['radius'][i]
-    den[i] = DATAs['density'][i]
-    v_p[i] = DATAs['v_p'][i]
-    v_s[i] = DATAs['v_s'][i]
-    grav[i] = DATAs['gravity'][i]
+n = 2  # порядок определяемого числа Лява
+R_Mars = 3389.92  # км
+depth_crust_const = param_integral['crust depth'].iloc[-1]  # км
+H_melt = 200  # км - толщина расплавленного слоя
+rad_core = param_integral['core radius'].iloc[-1]
+M_Mars = 6.4185e23  # кг
+den_av = 3 * M_Mars / (4 * m.pi * R_Mars ** 3) * 1e-12  # г/см3
+grav_av = 3.7279  # м/с^2
+l_planet = len(distr_numeric['radius'])
+for i in range(l_planet):
+    if distr_numeric['radius'][i] <= R_Mars - depth_crust_const:
+        l_crust = i + 1
+        break
+for i in range(l_crust, l_planet):
+    if distr_numeric['radius'][i] <= rad_core:
+        l_to_core = i
+        break
+den_crust = param_integral['crust density'].iloc[-1]
+den_core = distr_numeric['density'].iloc[-1]
+den_core_bound = distr_numeric['density'][l_to_core]
+t_core_bound = 0.02  # точка остановки в ядре (определяет предел интегрирования, дальше плотность полагается постоянной)
+n_grid = 10000  # деление сетки в мантии (определяет максимальный шаг)
+grid_step = 1 / n_grid
 
-DATAadd = pd.read_excel("datas/Input_data.xlsx")
-sulf = DATAadd['sulfur']
-hydr = DATAadd['hydro']
+distr_elast = {'viscosity': [], 'lame1_elast': [], 'lame2_elast': [], 'lame1': [], 'lame2': [],
+               'lame1_cw': [], 'lame2_cw': [], 'Q': []}
 
-rad_av = 3389.92    # км
-h_melt = 200 # км - толщина расплавленного слоя
-den_av = 3.935      # г/см^3
-mass_av = 4/3*math.pi*(1000*den_av) * (1000*rad_av)**3    # кг
-grav_av = 3.7279        # м/с^2
-transit4 = int(DATAs['radius'][n_grid])
-transit3 = int(DATAs['density'][n_grid])
-transit2 = int(DATAs['v_p'][n_grid])
-transit1 = int(DATAs['v_s'][n_grid])
-i_core = int(DATAs['radius'][n_grid+1])
-i_crust = int(DATAs['density'][n_grid+1])
-den_crust = den[n_grid-1]
-den_core = den[0]
-if MELTLAYER:
-    di_melt = int(h_melt/rad_av*n_grid)
-else:
-    di_melt = 0
-
-alpha = DATAadd['andrade'][0]
-eta_0 = DATAadd['viscosity'][0]/1e9 # коры, ГПа-с
-sigmaw = 2*math.pi/206.9/86400
-chi = 2*math.pi/44340 # 1/с
-eta_melt = DATAadd['eta melt layer'][0]
-eta_layers = [eta_melt, math.log(eta_0, 10), math.log(eta_0, 10), math.log(eta_0, 10)-1, math.log(eta_0, 10)-1, math.log(eta_0, 10)-2,
-              math.log(eta_0, 10)-2, math.log(eta_0, 10)]
-i_layers = [i_core+di_melt, i_core+di_melt, transit4, transit3, transit2, transit1, i_crust, i_crust]
-
-lame1 = []
-lame2 = []
-Q = []
+# Введение неупругости
 if VISCOSITY:
-    for i in range(len(v_p)):
-        if v_s[i] == 0:
-            lame2.append(0)
-            lame1.append((v_p[i]**2)*den[i])
-            Q.append(math.inf)
-        else:
-            eta = 10**np.interp(i, i_layers, eta_layers)
-            mu = (v_s[i]**2)*den[i]
-            J = (1+(1j*eta/mu*chi)**(-alpha)*math.gamma(1+alpha))/mu-1j/(eta*chi)
-            lame2.append(1/J)
-            K = (v_p[i]**2)*den[i] - 4/3*lame2[i]
-            lame1.append(K-2/3/J)
-            mu = 1/J
-            Q.append(mu.real/mu.imag)
+    print('Введение неупругости...')
+    # 1 - Инициализация параметров
+    print('Инициализация параметров неупругости...')
+    andrade = param_integral['andrade'].iloc[-1]
+    visc_0_exp = m.log10(param_integral['viscosity'].iloc[-1]) - 9  # вязкость коры, степень в ГПа-с
+    freq_cw = 2 * m.pi / 206.9 / 86400  # частота прилива - чандлеровская частота
+    freq_sun = 2 * m.pi / 44340  # частота солнечного прилива 1/с
+    visc_melt_exp = m.log10(param_integral['visc_melt'].iloc[-1]) - 9
+
+    # 2 - Расчет слоев
+    print('Расчет слоев вязкости...')
+    rad_trans = [R_Mars, R_Mars - depth_crust_const, R_Mars - depth_crust_const - grid_step**2]
+    visc_exp = [visc_0_exp, visc_0_exp, visc_0_exp - 2]
+    if DW85:
+        pres_trans = []
+        for i in range(1, distr_mineral.shape[0]):
+            if len(pres_trans) == 0 and not m.isnan(distr_mineral['Wad'][i]) and m.isnan(distr_mineral['Wad'][i - 1]):
+                pres_trans += [distr_mineral['pressure'][i] / 1e4]
+            if len(pres_trans) == 1 and m.isnan(distr_mineral['O'][i]) and not m.isnan(distr_mineral['O'][i - 1]):
+                pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
+            if len(pres_trans) == 2 and not m.isnan(distr_mineral['Ring'][i]) and m.isnan(distr_mineral['Ring'][i - 1]):
+                pres_trans += [distr_mineral['pressure'][i] / 1e4]
+            if len(pres_trans) == 3 and m.isnan(distr_mineral['Wad'][i]) and not m.isnan(distr_mineral['Wad'][i - 1]):
+                pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
+                break
+        pres_to_rad = inp.interp1d(distr_numeric['pressure'], distr_numeric['radius'])
+        visc_exp += [visc_0_exp - 2, visc_0_exp - 1, visc_0_exp - 1, visc_0_exp]
+        for p in pres_trans:
+            r = pres_to_rad(p)
+            if r < rad_core + H_melt * MELTLAYER:
+                break
+            else:
+                rad_trans += [r]
+        visc_exp = visc_exp[:len(rad_trans)]
+
+    visc_exp += [visc_exp[-1]]
+    if MELTLAYER:
+        rad_trans += [rad_core + H_melt, rad_core + H_melt - grid_step**2]
+        visc_exp += [visc_melt_exp] * 2
+    rad_trans += [rad_core]
+
+    def visc(r):
+        fun = inp.interp1d(rad_trans, visc_exp)
+        return 10 ** (fun(r))
+
+    # 3 - расчет коэффициентов Ламе
+    print('Расчет коэффициентов Ламе...')
+    for i in range(l_to_core):
+        lame2_elast = (distr_numeric['shear velocity'][i]**2) * distr_numeric['density'][i]
+        distr_elast['lame2_elast'].append(lame2_elast)
+        J = ((1 + (1j*visc(distr_numeric['radius'][i])/lame2_elast*freq_sun)**(-andrade)*m.gamma(1 + andrade))
+             /lame2_elast
+             - 1j/(visc(distr_numeric['radius'][i]) * freq_sun))
+        lame2_inelast = 1 / J
+        distr_elast['lame2'].append(lame2_inelast)
+        bulk_elast = (distr_numeric['compr velocity'][i]**2)*distr_numeric['density'][i] - 4/3*distr_elast['lame2_elast'][i]
+        bulk_inelast = (distr_numeric['compr velocity'][i]**2)*distr_numeric['density'][i] - 4/3*distr_elast['lame2'][i]
+        distr_elast['lame1_elast'].append(bulk_elast - 2 / 3 * lame2_elast)
+        distr_elast['lame1'].append(bulk_inelast - 2/3*lame2_inelast)
+
+        J_cw = ((1 + (1j*visc(distr_numeric['radius'][i])/lame2_elast*freq_cw)**(-andrade)*m.gamma(1 + andrade))
+                /lame2_elast
+                - 1j/(visc(distr_numeric['radius'][i])*freq_cw))
+        distr_elast['lame2_cw'].append(1 / J_cw)
+        bulk_cw = ((distr_numeric['compr velocity'][i]**2)*distr_numeric['density'][i] -
+                   4/3*distr_elast['lame2_cw'][i])
+        distr_elast['lame1_cw'].append(bulk_cw - 2/3/J_cw)
+
+        distr_elast['Q'].append(lame2_inelast.real / lame2_inelast.imag)
+        distr_elast['viscosity'].append(visc(distr_numeric['radius'][i])*1e9)
+
+# Расчет коэффициентов Ламе для упругой модели
 else:
-    for i in range(len(v_p)):
-        if v_s[i] == 0:
-            lame2.append(0)
-            lame1.append((v_p[i]**2)*den[i])
-            Q.append(math.inf)
-        else:
-            lame2.append((v_s[i]**2)*den[i])
-            lame1.append((v_p[i]**2)*den[i] - 4/3*lame2[i])
-            Q.append(math.inf)
+    print('Расчет коэффициентов Ламе...')
+    for i in range(l_to_core):
+        distr_elast['lame2'].append((distr_numeric['shear velocity'][i] ** 2) * distr_numeric['density'][i])
+        distr_elast['lame2_elast'].append(distr_elast['lame2'][i])
+        distr_elast['lame1'].append((distr_numeric['compr velocity'][i] ** 2) * distr_numeric['density'][i] -
+                                    4 / 3 * distr_elast['lame2'][i])
+        distr_elast['lame1_elast'].append(distr_elast['lame1'][i])
 
-lame1_ch = []
-lame2_ch = []
-if VISCOSITY:
-    for i in range(len(v_p)):
-        if v_s[i] == 0:
-            lame2_ch.append(0)
-            lame1_ch.append((v_p[i]**2)*den[i])
-        else:
-            eta = 10**np.interp(i, i_layers, eta_layers)
-            mu = (v_s[i]**2)*den[i]
-            J = (1+(1j*eta/mu*sigmaw)**(-alpha)*math.gamma(1+alpha))/mu-1j/(eta*sigmaw)
-            lame2_ch.append(1/J)
-            K = (v_p[i]**2)*den[i] - 4/3*lame2_ch[i]
-            lame1_ch.append(K-2/3/J)
-else:
-    for i in range(len(v_p)):
-        if v_s[i] == 0:
-            lame2_ch.append(0)
-            lame1_ch.append((v_p[i] ** 2) * den[i])
-        else:
-            lame2_ch.append((v_s[i] ** 2) * den[i])
-            lame1_ch.append((v_p[i] ** 2) * den[i] - 4 / 3 * lame2_ch[i])
+        distr_elast['lame2_cw'].append(distr_elast['lame2'][i])
+        distr_elast['lame1_cw'].append(distr_elast['lame1'][i])
 
-# обезразмериваем
-for i in range(len(den)):
-    rad[i] /= rad_av
-    den[i] /= den_av
-    lame1[i] /= den_av*rad_av*grav_av/1000
-    lame2[i] /= den_av*rad_av*grav_av/1000
-    grav[i] /= grav_av
-    lame1_ch[i] /= den_av*rad_av*grav_av/1000
-    lame2_ch[i] /= den_av*rad_av*grav_av/1000
+        distr_elast['Q'].append(m.inf)
+        distr_elast['viscosity'].append(0)
 
-dif = []
-for i in range(len(rad)-1):
-    dif.append(rad[i+1]-rad[i])
+for i in range(l_to_core, l_planet):
+    distr_elast['lame2'].append(0)
+    distr_elast['lame2_elast'].append(distr_elast['lame2'][i])
+    distr_elast['lame1'].append((distr_numeric['compr velocity'][i] ** 2) * distr_numeric['density'][i])
+    distr_elast['lame1_elast'].append(distr_elast['lame1'][i])
 
-def ro(x):
-    return np.interp(x, rad, den)
-def gravit(x):
-    return np.interp(x, rad, grav)
-def Molod(x, y):
-    return -y**2-2*(n+1)/x*y-3*(ro(x+0.0001)-ro(x-0.0001))/0.0002/gravit(x)
-solution = sp.integrate.RK45(Molod, 0.02, [0], rad[i_core]-0.00011)
-while solution.status != 'finished':
-    solution.step()
-gamm = solution.y[0]
-print('gamma =', gamm)
+    distr_elast['lame2_cw'].append(0)
+    distr_elast['lame1_cw'].append(distr_elast['lame1'][i])
 
-Ma = mass(den, rad, dif)
-In = inertia(den, rad, dif)
-K2 = Love(False, n, i_core, gamm, 'k', den, rad, dif, lame1, lame2, grav)
+    distr_elast['Q'].append(m.inf)
+    distr_elast['viscosity'].append(0)
 
-# возвращаем размерность
-Ma *= 3/4/math.pi
-In *= 3/4/math.pi
-print('M =', Ma)
-print('I =', In)
-print('k2 =', K2)
+# Обезразмеривание
+print('Обезразмеривание данных...')
+distr_numeric['radius'] /= R_Mars
+distr_numeric['density'] /= den_av
+distr_numeric['gravity'] /= grav_av
+for i in range(l_planet):
+    for k in distr_elast:
+        if k != 'Q' and k != 'viscosity':
+            distr_elast[k][i] /= den_av * R_Mars * grav_av / 1e3
+rad_core /= R_Mars
+
+# Расчет модельных массы и момента инерции формулой Симпсона
+print('Расчет модельного значения массы...')
+integral_dict = {'mass': [], 'inertia': []}
+for i in range(l_planet):
+    integral_dict['mass'] += [4 * m.pi * distr_numeric['density'][i] * distr_numeric['radius'][i] ** 2]
+    integral_dict['inertia'] += [8 / 3 * m.pi * distr_numeric['density'][i] * distr_numeric['radius'][i] ** 4]
+M_Mars_model = - ing.trapezoid(integral_dict['mass'], x=distr_numeric['radius'])
+M_Mars_model *= 3/4/m.pi
+print('M =', M_Mars_model)
+print('Расчет модельного значения момента инерции...')
+I_Mars_model = - ing.trapezoid(integral_dict['inertia'], x=distr_numeric['radius'])
+I_Mars_model *= 3/4/m.pi
+print('I =', I_Mars_model)
+I_core_model = - ing.trapezoid(integral_dict['inertia'][l_to_core:], x=distr_numeric['radius'][l_to_core:])
+I_core_model *= 3/4/m.pi
+
+# Вычисление числа Молоденского
+print('Вычисление числа Молоденского...')
+den_func = inp.interp1d(distr_numeric['radius'], distr_numeric['density'])
+grav_func = inp.interp1d(distr_numeric['radius'], distr_numeric['gravity'])
+
+def Molodensky_func(t, y):
+    return - y[0] ** 2 - 2 * (n + 1) / t * y[0] - 3 * (
+                den_func(t + 0.0001) - den_func(t - 0.0001)) / 0.0002 / grav_func(t)
+
+Molodensky_solution = ing.RK45(Molodensky_func, t_core_bound, [0], distr_numeric['radius'][l_to_core] - 0.00011,
+                               max_step=grid_step)
+while Molodensky_solution.status == 'running':
+    Molodensky_solution.step()
+Molodensky_number = Molodensky_solution.y[0]
+print('gamma =', Molodensky_number)
+
+# Вычисление числа Лява k2
+print('Расчет числа Лява k2...')
+lame1_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame1'])
+lame2_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame2'])
+lame1_cw_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame1_cw'])
+lame2_cw_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame2_cw'])
+lame1_elst_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame1_elast'])
+lame2_elst_func = inp.interp1d(distr_numeric['radius'], distr_elast['lame2_elast'])
+
+class Love_RHS:
+    def __init__(self, freq_mode):
+        if freq_mode == 'sun':
+            self.lame1 = lame1_func
+            self.lame2 = lame2_func
+        elif freq_mode == 'cw':
+            self.lame1 = lame1_cw_func
+            self.lame2 = lame2_cw_func
+        elif freq_mode == 'elast':
+            self.lame1 = lame1_elst_func
+            self.lame2 = lame2_elst_func
+
+    def __call__(self, x, y):
+        lame1 = self.lame1(x)
+        lame2 = self.lame2(x)
+        den = den_func(x)
+        grav = grav_func(x)
+        eq = [0] * 6
+        eq[0] = -2*lame1/(lame1 + 2*lame2)*y[0]/x + y[1]/(lame1 + 2*lame2) + lame1*n*(n + 1)/(lame1 + 2*lame2)*y[4]/x
+        eq[1] = ((-4*den*grav*x + 4*lame2*(3*lame1 + 2*lame2)/(lame1 + 2*lame2))*y[0]/x**2 - 4*lame2/(lame1 + 2*lame2)*y[1]/x +
+                 (n*(n + 1)*den*grav*x - 2*lame2*(3*lame1 + 2*lame2)*n*(n + 1)/(lame1 + 2*lame2))*y[4]/x**2 + n*(n + 1)/x*y[5] -
+                 den*y[3])
+        eq[2] = 3*den*y[0] + y[3]
+        eq[3] = -3*den*(n + 1)*n/x*y[4] + n*(n + 1)/x**2*y[2] - 2/x*y[3]
+        eq[4] = -y[0]/x + y[4]/x + y[5]/lame2
+        eq[5] = ((den*grav/x - 2*lame2*(3*lame1 + 2*lame2)/(lame1 + 2*lame2)/x**2)*y[0] -
+                 lame1/(lame1 + 2*lame2)*y[1]/x +
+                 2*lame2/(lame1 + 2*lame2)*(lame1*(2*n**2 + 2*n - 1) + 2*lame2*(n**2 + n - 1))*y[4]/x**2 - 3*y[5]/x -
+                 den*y[2]/x)
+        return eq
+
+print('Расчет упругого числа Лява k2...')
+Love_RHS_elast = Love_RHS('elast')
+Love_elast_solution = [ing.RK45(Love_RHS_elast, distr_numeric['radius'][l_to_core - 1],
+                              np.array([1,
+                                        distr_numeric['density'][l_to_core - 1]*distr_numeric['gravity'][l_to_core - 1],
+                                        0, -3*distr_numeric['density'][l_to_core - 1], 0, 0], dtype="complex_"),
+                              1, max_step=grid_step),
+                     ing.RK45(Love_RHS_elast, distr_numeric['radius'][l_to_core - 1],
+                              np.array([0, -distr_numeric['density'][l_to_core - 1], 1,
+                               n/distr_numeric['radius'][l_to_core - 1] + Molodensky_number, 0, 0], dtype="complex_"),
+                              1, max_step=grid_step),
+                     ing.RK45(Love_RHS_elast, distr_numeric['radius'][l_to_core - 1],
+                              np.array([0, 0, 0, 0, 1, 0], dtype="complex_"), 1, max_step=grid_step)]
+for sol in Love_elast_solution:
+    while sol.status == 'running':
+        sol.step()
+
+bound_cond_matrix = [[Love_elast_solution[0].y[1], Love_elast_solution[1].y[1], Love_elast_solution[2].y[1]],
+                     [Love_elast_solution[0].y[3] + (n+1) * Love_elast_solution[0].y[2],
+                      Love_elast_solution[1].y[3] + (n + 1) * Love_elast_solution[1].y[2],
+                      Love_elast_solution[2].y[3] + (n + 1) * Love_elast_solution[2].y[2]],
+                     [Love_elast_solution[0].y[5], Love_elast_solution[1].y[5], Love_elast_solution[2].y[5]]]
+bound_cond_RHS = [0, 2*n + 1, 0]
+solutions_coeffs = lin.solve(bound_cond_matrix, bound_cond_RHS)
+Love_elast = (solutions_coeffs[0] * Love_elast_solution[0].y[2] + solutions_coeffs[1] * Love_elast_solution[1].y[2] +
+            solutions_coeffs[2] * Love_elast_solution[2].y[2] - 1)
+print('k2_e =', Love_elast)
+
+print('Расчет числа Лява k2 для чандлеровского колебания...')
+Love_RHS_CW = Love_RHS('cw')
+Love_CW_solution = [ing.RK45(Love_RHS_CW, distr_numeric['radius'][l_to_core - 1],
+                             np.array([1,
+                                       distr_numeric['density'][l_to_core - 1]*distr_numeric['gravity'][l_to_core - 1],
+                                       0, -3*distr_numeric['density'][l_to_core - 1], 0, 0], dtype="complex_"),
+                             1, max_step=grid_step),
+                    ing.RK45(Love_RHS_CW, distr_numeric['radius'][l_to_core - 1],
+                             np.array([0, -distr_numeric['density'][l_to_core - 1], 1,
+                                       n/distr_numeric['radius'][l_to_core - 1] + Molodensky_number, 0, 0],
+                                      dtype="complex_"), 1, max_step=grid_step),
+                    ing.RK45(Love_RHS_CW, distr_numeric['radius'][l_to_core - 1], np.array([0, 0, 0, 0, 1, 0],
+                                                                                           dtype="complex_"),
+                             1, max_step=grid_step)]
+for sol in Love_CW_solution:
+    while sol.status == 'running':
+        sol.step()
+
+bound_cond_matrix = [[Love_CW_solution[0].y[1], Love_CW_solution[1].y[1], Love_CW_solution[2].y[1]],
+                     [Love_CW_solution[0].y[3] + (n+1) * Love_CW_solution[0].y[2],
+                      Love_CW_solution[1].y[3] + (n+1) * Love_CW_solution[1].y[2],
+                      Love_CW_solution[2].y[3] + (n+1) * Love_CW_solution[2].y[2]],
+                     [Love_CW_solution[0].y[5], Love_CW_solution[1].y[5], Love_CW_solution[2].y[5]]]
+bound_cond_RHS = [0, 2*n + 1, 0]
+solutions_coeffs = lin.solve(bound_cond_matrix, bound_cond_RHS)
+Love_CW = (solutions_coeffs[0]*Love_CW_solution[0].y[2] + solutions_coeffs[1]*Love_CW_solution[1].y[2] +
+           solutions_coeffs[2]*Love_CW_solution[2].y[2] - 1)
+print('k2_cw =', Love_CW)
+
+print('Расчет числа Лява k2 для Солнечного прилива...')
+Love_RHS_Sun = Love_RHS('sun')
+Love_Sun_solution = [ing.RK45(Love_RHS_Sun, distr_numeric['radius'][l_to_core - 1],
+                              np.array([1,
+                                        distr_numeric['density'][l_to_core - 1]*distr_numeric['gravity'][l_to_core - 1],
+                                        0, -3*distr_numeric['density'][l_to_core - 1], 0, 0], dtype="complex_"),
+                              1, max_step=grid_step),
+                     ing.RK45(Love_RHS_Sun, distr_numeric['radius'][l_to_core - 1],
+                              np.array([0, -distr_numeric['density'][l_to_core - 1], 1,
+                               n/distr_numeric['radius'][l_to_core - 1] + Molodensky_number, 0, 0], dtype="complex_"),
+                              1, max_step=grid_step),
+                     ing.RK45(Love_RHS_Sun, distr_numeric['radius'][l_to_core - 1],
+                              np.array([0, 0, 0, 0, 1, 0], dtype="complex_"), 1, max_step=grid_step)]
+for sol in Love_Sun_solution:
+    while sol.status == 'running':
+        sol.step()
+
+bound_cond_matrix = [[Love_Sun_solution[0].y[1], Love_Sun_solution[1].y[1], Love_Sun_solution[2].y[1]],
+                     [Love_Sun_solution[0].y[3] + (n+1) * Love_Sun_solution[0].y[2],
+                      Love_Sun_solution[1].y[3] + (n + 1) * Love_Sun_solution[1].y[2],
+                      Love_Sun_solution[2].y[3] + (n + 1) * Love_Sun_solution[2].y[2]],
+                     [Love_Sun_solution[0].y[5], Love_Sun_solution[1].y[5], Love_Sun_solution[2].y[5]]]
+bound_cond_RHS = [0, 2*n + 1, 0]
+solutions_coeffs = lin.solve(bound_cond_matrix, bound_cond_RHS)
+Love_Sun = (solutions_coeffs[0] * Love_Sun_solution[0].y[2] + solutions_coeffs[1] * Love_Sun_solution[1].y[2] +
+            solutions_coeffs[2] * Love_Sun_solution[2].y[2] - 1)
+print('k2_sun =', Love_Sun)
+
+# Восстановление размерности
+print('Восстановление размерности...')
+distr_numeric['radius'] *= R_Mars
+distr_numeric['density'] *= den_av
+distr_numeric['gravity'] *= grav_av
+for i in range(l_planet):
+    for k in distr_elast:
+        if k != 'Q' and k != 'viscosity':
+            distr_elast[k][i] *= den_av * R_Mars * grav_av / 1e3
 
 # Расчет чандлеровского периода
+print('Расчет чандлеровского периода...')
 A = 0.362976
 B = 0.363229
 C = 0.365067
-T = 24.6229*3600
-G = 6.6743e-11
+period_rot = 24.6229 * 3600
+grav_const = 6.6743e-11
 
-K2_ch = Love(False, 2, i_core, gamm, 'k', den, rad, dif, lame1_ch, lame2_ch, grav)
-print('K2_ch =', K2_ch)
-alp = (C-B)/A
-bet = (C-A)/B
-AB = (A+B)/2
-omega = 2*math.pi/T
-Te = T/math.sqrt(alp*bet)
-k0 = 3*G*(C-AB)*mass_av/omega**2/(rad_av*1e3)**3
-Ac = 8/15*math.pi*den_core*1000*(rad[i_core]*rad_av*1000)**5/mass_av/(rad_av*1000)**2
-print('R_core =', rad[i_core]*rad_av)
+A_red = (C - B) / A
+B_red = (C - A) / B
+A_aver = (A + B) / 2
+freq_rot = 2 * m.pi / period_rot
+period_Euler = period_rot / m.sqrt(A_red * B_red)
+Love_sec = 3 * grav_const * (C - A_aver) * M_Mars / freq_rot ** 2 / (R_Mars * 1e3) ** 3
+print('R_core =', rad_core * R_Mars)
 
-Tw = Te*(1-Ac/math.sqrt(A*B))/(1-K2_ch.real/k0)/86400
-print('Tw0 = ', Tw)
+period_CW = period_Euler * (1 - I_core_model / m.sqrt(A * B)) / (1 - Love_CW.real / Love_sec) / 86400
+print('Tw0 = ', period_CW)
 
-if CREEPFUNCTION:
-    Tw_cr = Te * (1 - Ac / math.sqrt(A * B)) / (1 - K2.real / k0) / 86400
+period_CW_e = period_Euler * (1 - I_core_model / m.sqrt(A * B)) / (1 - Love_elast.real / Love_sec) / 86400
+print('Tw0e = ', period_CW_e)
+
+# Расчет чандлеровского периода через функцию крипа
+if VISCOSITY and CREEPFUNCTION:
+    print('Расчет чандлеровского периода с использованием функции крипа...')
+    period_CW_creep = period_Euler * (1 - I_core_model / m.sqrt(A * B)) / (1 - Love_Sun.real / Love_sec) / 86400
     n = 0.4
-    dT = Tw_cr/1118*((chi/sigmaw)**n-1)/(k0-K2_ch.real)/math.tan(n*math.pi/2)
+    dT = period_CW_creep / 1118 * ((freq_sun / freq_cw) ** n - 1) / (Love_sec - Love_CW.real) / m.tan(n * m.pi / 2)
+    print(f'Tw_cr = {period_CW_creep} + {dT}')
 
-Data_grid = [[In, K2.real, K2.imag, den_crust, den_core, float(sulf), float(hydr), rad[i_core]*rad_av, DATAadd['viscosity'][0],
-              alpha, float(10)**(eta_melt+9), Tw]]
-if REWRITEFILE:
-    DATAsOUT = pd.DataFrame(Data_grid, columns=['inertia', 'Re k2', 'Im k2', 'crust density', 'core density', 'sulfur',
-                                                'hydro', 'core radius', 'viscosity', 'andrade', 'eta melt layer', 'Tw'])
-else:
-    DATAsOUTold = pd.read_excel("datas/Probe_models.xlsx")
-    DATAsOUTnew = pd.DataFrame(Data_grid, columns=['inertia', 'Re k2', 'Im k2', 'crust density', 'core density',
-                                                   'sulfur', 'hydro', 'core radius', 'viscosity', 'andrade',
-                                                   'eta melt layer', 'Tw'])
-    DATAsOUT = pd.concat([DATAsOUTold, DATAsOUTnew], ignore_index=True)
-DATAsOUT.to_excel("datas/Probe_models.xlsx", index=False)
+# Запись данных в файлы
+print('Запись данных в файлы...')
+param_integral['core density'] = [den_core] # in the center of the core
+param_integral['inertia'] = [I_Mars_model]
+param_integral['Love number (real)'] = [Love_Sun.real]
+param_integral['Love number (imaginary)'] = [Love_Sun.imag]
+param_integral['Chandler period'] = [period_CW]
+param_integral['Chandler period elastic'] = [period_CW_e]
+if not REWRITEFILE:
+    param_integral_old = pd.read_excel("../data/dynamic/integral_parameters.xlsx")
+    param_integral = pd.concat([param_integral_old, param_integral], ignore_index=True)
+param_integral.to_excel("../data/dynamic/integral_parameters.xlsx", index=False)
 
-Q_data = []
-for i in range(n_grid):
-    Q_data.append([rad[i]*rad_av, Q[i]])
-DATAsOUT2 = pd.DataFrame(Q_data, columns=['radius', 'Q_mu'])
-DATAsOUT2.to_excel("datas/Q_fourlayer_data.xlsx", index=False)"""
+for k in distr_elast:
+    distr_numeric[k] = distr_elast[k]
+distr_numeric.to_excel("../data/dynamic/model_distributions.xlsx", index=False)
+print('Программа выполнена')
