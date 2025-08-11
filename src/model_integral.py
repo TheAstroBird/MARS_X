@@ -33,13 +33,6 @@ while True:
     else:
         print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
 if VISCOSITY:
-    DW85 = False
-    print("\nВведите обозначение рассматриваемой химической модели (напр., DW85):")
-    s = input()
-    if AUTO:
-        print(s)
-    if 'DW' in s:
-        DW85 = True
     MELTLAYER = False
     print('\nУчитьвать наличие расплавленного слоя? (Y или N)')
     while True:
@@ -80,12 +73,15 @@ while True:
     else:
         print("\nНЕИЗВЕСТНЫЙ ФОРМАТ ВВОДА! Введите еще раз")
 
+composition = input('\nВведите название используемой химической модели:\n').lower()
+areoterm = input('\nВведите название используемой ареотермы:\n').lower()
+
 # Чтение внешних данных
 print('\nЧтение внешних данных...')
 distr_numeric = pd.read_excel("../data/dynamic/model_distributions.xlsx")
 param_integral = pd.read_excel("../data/dynamic/input_param.xlsx")
-if VISCOSITY and DW85:
-    distr_mineral = pd.read_excel("../data/dynamic/mineral_distributions.xlsx")
+if VISCOSITY:
+    distr_mineral = pd.read_excel('../data/dynamic/mineral_distributions_' + composition + '_' + areoterm + '.xlsx')
 
 n = 2  # порядок определяемого числа Лява
 R_Mars = 3389.92  # км
@@ -129,27 +125,27 @@ if VISCOSITY:
     print('Расчет слоев вязкости...')
     rad_trans = [R_Mars, R_Mars - depth_crust_const, R_Mars - depth_crust_const - grid_step**2]
     visc_exp = [visc_0_exp, visc_0_exp, visc_0_exp - 2]
-    if DW85:
-        pres_trans = []
-        for i in range(1, distr_mineral.shape[0]):
-            if len(pres_trans) == 0 and not m.isnan(distr_mineral['Wad'][i]) and m.isnan(distr_mineral['Wad'][i - 1]):
-                pres_trans += [distr_mineral['pressure'][i] / 1e4]
-            if len(pres_trans) == 1 and m.isnan(distr_mineral['O'][i]) and not m.isnan(distr_mineral['O'][i - 1]):
-                pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
-            if len(pres_trans) == 2 and not m.isnan(distr_mineral['Ring'][i]) and m.isnan(distr_mineral['Ring'][i - 1]):
-                pres_trans += [distr_mineral['pressure'][i] / 1e4]
-            if len(pres_trans) == 3 and m.isnan(distr_mineral['Wad'][i]) and not m.isnan(distr_mineral['Wad'][i - 1]):
-                pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
-                break
-        pres_to_rad = inp.interp1d(distr_numeric['pressure'], distr_numeric['radius'])
-        visc_exp += [visc_0_exp - 2, visc_0_exp - 1, visc_0_exp - 1, visc_0_exp]
-        for p in pres_trans:
-            r = pres_to_rad(p)
-            if r < rad_core + H_melt * MELTLAYER:
-                break
-            else:
-                rad_trans += [r]
-        visc_exp = visc_exp[:len(rad_trans)]
+    pres_trans = []
+    for i in range(1, distr_mineral.shape[0]):
+        if len(pres_trans) == 0 and not m.isnan(distr_mineral['Wad'][i]) and m.isnan(distr_mineral['Wad'][i - 1]):
+            pres_trans += [distr_mineral['pressure'][i] / 1e4]
+        if len(pres_trans) == 1 and m.isnan(distr_mineral['O'][i]) and not m.isnan(distr_mineral['O'][i - 1]):
+            pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
+        if len(pres_trans) == 2 and not m.isnan(distr_mineral['Ring'][i]) and m.isnan(distr_mineral['Ring'][i - 1]):
+            pres_trans += [distr_mineral['pressure'][i] / 1e4]
+        if len(pres_trans) == 3 and m.isnan(distr_mineral['Wad'][i]) and not m.isnan(distr_mineral['Wad'][i - 1]):
+            pres_trans += [distr_mineral['pressure'][i] * (1+grid_step**2) / 1e4]
+            break
+    print(pres_trans)
+    pres_to_rad = inp.interp1d(distr_numeric['pressure'], distr_numeric['radius'])
+    visc_exp += [visc_0_exp - 2, visc_0_exp - 1, visc_0_exp - 1, visc_0_exp]
+    for p in pres_trans:
+        r = pres_to_rad(p)
+        if r < rad_core + H_melt * MELTLAYER:
+            break
+        else:
+            rad_trans += [r]
+    visc_exp = visc_exp[:len(rad_trans)]
 
     visc_exp += [visc_exp[-1]]
     if MELTLAYER:
@@ -168,7 +164,7 @@ if VISCOSITY:
         distr_elast['lame2_elast'].append(lame2_elast)
         J = ((1 + (1j*visc(distr_numeric['radius'][i])/lame2_elast*freq_sun)**(-andrade)*m.gamma(1 + andrade))
              /lame2_elast
-             - 1j/(visc(distr_numeric['radius'][i]) * freq_sun))
+             - 1j/(visc(distr_numeric['radius'][i])*freq_sun))
         lame2_inelast = 1 / J
         distr_elast['lame2'].append(lame2_inelast)
         bulk_elast = (distr_numeric['compr velocity'][i]**2)*distr_numeric['density'][i] - 4/3*distr_elast['lame2_elast'][i]
@@ -345,9 +341,9 @@ for sol in Love_CW_solution:
         sol.step()
 
 bound_cond_matrix = [[Love_CW_solution[0].y[1], Love_CW_solution[1].y[1], Love_CW_solution[2].y[1]],
-                     [Love_CW_solution[0].y[3] + (n+1) * Love_CW_solution[0].y[2],
-                      Love_CW_solution[1].y[3] + (n+1) * Love_CW_solution[1].y[2],
-                      Love_CW_solution[2].y[3] + (n+1) * Love_CW_solution[2].y[2]],
+                     [Love_CW_solution[0].y[3] + (n+1)*Love_CW_solution[0].y[2],
+                      Love_CW_solution[1].y[3] + (n+1)*Love_CW_solution[1].y[2],
+                      Love_CW_solution[2].y[3] + (n+1)*Love_CW_solution[2].y[2]],
                      [Love_CW_solution[0].y[5], Love_CW_solution[1].y[5], Love_CW_solution[2].y[5]]]
 bound_cond_RHS = [0, 2*n + 1, 0]
 solutions_coeffs = lin.solve(bound_cond_matrix, bound_cond_RHS)
@@ -425,16 +421,23 @@ if VISCOSITY and CREEPFUNCTION:
 
 # Запись данных в файлы
 print('Запись данных в файлы...')
-param_integral['core density'] = [den_core] # in the center of the core
+param_integral['core density center'] = [den_core] # in the center of the core
+param_integral['core density boundary'] = [den_core_bound]
 param_integral['inertia'] = [I_Mars_model]
+param_integral['Molodensky'] = [Molodensky_number]
+param_integral['Love number elastic'] = [Love_elast.real]
 param_integral['Love number (real)'] = [Love_Sun.real]
 param_integral['Love number (imaginary)'] = [Love_Sun.imag]
+param_integral['Love number CW'] = [Love_CW]
+param_integral['Love number secular'] = [Love_sec]
 param_integral['Chandler period'] = [period_CW]
 param_integral['Chandler period elastic'] = [period_CW_e]
+s_output = '../data/archive/PhD_2nd_year/comparing_chem_models_' + composition + '_' + areoterm + '.xlsx'
+# s_output = '../data/dynamic/integral_parameters.xlsx'
 if not REWRITEFILE:
-    param_integral_old = pd.read_excel("../data/dynamic/integral_parameters.xlsx")
+    param_integral_old = pd.read_excel(s_output)
     param_integral = pd.concat([param_integral_old, param_integral], ignore_index=True)
-param_integral.to_excel("../data/dynamic/integral_parameters.xlsx", index=False)
+param_integral.to_excel(s_output, index=False)
 
 for k in distr_elast:
     distr_numeric[k] = distr_elast[k]

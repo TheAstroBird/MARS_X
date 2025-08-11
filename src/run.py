@@ -1,31 +1,24 @@
-import subprocess
-import pandas as pd
+from model import Mars
+from plot import plot_2d_models
 
-param_distr = {'AUTO': 'Y', 'CONSTCORE': 'N', 'GRAPH': 'N', 'SAVEPIC': 'N', 'save_out': 'distr_test.png'}
-param_integral = {'AUTO': 'Y', 'VISCOSITY': 'Y', 'model_name': 'DW85', 'MELTLAYER': 'Y', 'CREEPFUNCTION': 'N',
-                  'REWRITEFILE': 'N'}
-integral_param = {'crust density': [2.7], 'crust depth': [70],
-                  'core density': [6.1], 'core hydro': [0], 'core sulfur': [0.8],
-                  'viscosity': [1e21], 'andrade': [0.3], 'visc_melt': [1e9]}
+comp = 'BF97'
+areo = 'ATL'
 
-if param_distr['GRAPH'] == 'N' or param_distr['SAVEPIC'] == 'N':
-    param_distr.pop('save_out')
-    if param_distr['GRAPH'] == 'N':
-        param_distr.pop('SAVEPIC')
-if param_integral['VISCOSITY'] == 'N':
-    param_integral.pop('model_name')
-    param_integral.pop('MELTLAYER')
-    param_integral.pop('CREEPFUNCTION')
-
-s = '\n'.join(param_distr.values()) + '\n'
-
-DATAs = pd.DataFrame(integral_param)
-DATAs.to_excel("../data/dynamic/input_param.xlsx", index=False)
-
-subprocess.run('python3 model_distribution.py', input=s, shell=True, text=True)
-
-s = '\n'.join(param_integral.values()) + '\n'
-
-subprocess.run('python3 model_integral.py', input=s, shell=True, text=True)
-
-subprocess.run('python3 plots/plot_k2_MOI.py', shell=True)
+t = 'archive/PhD_2nd_year/comparing_chem_models'
+t_ca = t + '_' + comp.lower() + '_' + areo.lower()
+for xs in []:
+    c = Mars(composition='BF97',
+             areoterm='ATL',
+             density_crust=2.7, # 2.7-3.1
+             depth_crust=72, # 24-72
+             sulfur_core=xs)
+    c.ced()
+    for visc in [10**21, 10**20, 10**19, 10**18]:
+        print(f'\nCalculation of model with {xs:.1f}FeS and viscosity of {visc:.0e} Pa*s')
+        c.viscosity = visc
+        c.cid()
+        c.cip()
+        c.save_integrals(target=t,
+                         rewrite=False,
+                         add_composition_name=True)
+plot_2d_models(path=t_ca)
