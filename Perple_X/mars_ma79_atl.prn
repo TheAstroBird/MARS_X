@@ -1,0 +1,179 @@
+
+--------------------------------------------------------------------------------
+
+
+Problem title: MARS_X                                                                                                                                                            
+
+Thermodynamic data base from: Stixrude & Lithgow-Bertelloni, GJI '21                                          
+
+Independently constrained potentials:
+
+   P(bar)   T(K)    
+
+Components with unconstrained potentials:
+
+   NA2O    MGO     AL2O3   SIO2    CAO     FEO  
+
+Phases and (projected) compositions:
+
+            NA2O    MGO     AL2O3   SIO2    CAO     FEO  
+   ab        0.125   0.000   0.125   0.750   0.000   0.000
+   alm       0.000   0.000   0.143   0.429   0.000   0.429
+   aperov    0.000   0.000   1.000   0.000   0.000   0.000
+   an        0.000   0.000   0.250   0.500   0.250   0.000
+   anao      0.500   0.000   0.500   0.000   0.000   0.000
+   seif      0.000   0.000   0.000   1.000   0.000   0.000
+   appv      0.000   0.000   1.000   0.000   0.000   0.000
+   ca-pv     0.000   0.000   0.000   0.500   0.500   0.000
+   cts       0.000   0.000   0.333   0.333   0.333   0.000
+   cen       0.000   0.500   0.000   0.500   0.000   0.000
+   cor       0.000   0.000   1.000   0.000   0.000   0.000
+   coes      0.000   0.000   0.000   1.000   0.000   0.000
+   crst      0.000   0.000   0.000   1.000   0.000   0.000
+   di        0.000   0.250   0.000   0.500   0.250   0.000
+   en        0.000   0.500   0.000   0.500   0.000   0.000
+   fa        0.000   0.000   0.000   0.333   0.000   0.667
+   fc2/c     0.000   0.000   0.000   0.500   0.000   0.500
+   ffer      0.000   0.000   0.500   0.000   0.000   0.500
+   faki      0.000   0.000   0.000   0.500   0.000   0.500
+   fperov    0.000   0.000   0.000   0.500   0.000   0.500
+   fring     0.000   0.000   0.000   0.333   0.000   0.667
+   fwad      0.000   0.000   0.000   0.333   0.000   0.667
+   fnal      0.083   0.000   0.417   0.167   0.000   0.333
+   fo        0.000   0.667   0.000   0.333   0.000   0.000
+   fppv      0.000   0.000   0.000   0.500   0.000   0.500
+   fs        0.000   0.000   0.000   0.500   0.000   0.500
+   gr        0.000   0.000   0.143   0.429   0.429   0.000
+   herc      0.000   0.000   0.500   0.000   0.000   0.500
+   hed       0.000   0.000   0.000   0.500   0.250   0.250
+   jd        0.167   0.000   0.167   0.667   0.000   0.000
+   ky        0.000   0.000   0.500   0.500   0.000   0.000
+   c2/c      0.000   0.500   0.000   0.500   0.000   0.000
+   mfer      0.000   0.500   0.500   0.000   0.000   0.000
+   aki       0.000   0.500   0.000   0.500   0.000   0.000
+   maj       0.000   0.500   0.000   0.500   0.000   0.000
+   perov     0.000   0.500   0.000   0.500   0.000   0.000
+   ring      0.000   0.667   0.000   0.333   0.000   0.000
+   ts        0.000   0.333   0.333   0.333   0.000   0.000
+   wad       0.000   0.667   0.000   0.333   0.000   0.000
+   mnal      0.083   0.333   0.417   0.167   0.000   0.000
+   ppv       0.000   0.500   0.000   0.500   0.000   0.000
+   nfer      0.250   0.000   0.250   0.500   0.000   0.000
+   namj      0.143   0.143   0.000   0.714   0.000   0.000
+   neph      0.250   0.000   0.250   0.500   0.000   0.000
+   nnal      0.250   0.000   0.250   0.500   0.000   0.000
+   odi       0.000   0.250   0.000   0.500   0.250   0.000
+   per       0.000   1.000   0.000   0.000   0.000   0.000
+   py        0.000   0.429   0.143   0.429   0.000   0.000
+   qtz       0.000   0.000   0.000   1.000   0.000   0.000
+   sp        0.000   0.500   0.500   0.000   0.000   0.000
+   st        0.000   0.000   0.000   1.000   0.000   0.000
+   wus       0.000   0.000   0.000   0.000   0.000   1.000
+
+Phases:
+
+ C2/c        Wus         Pv          Pl          Sp          O         
+ Wad         Ring        Opx         Cpx         Aki         Gt        
+ Ppv         CF          NaAl      
+
+--------------------------------------------------------------------------------
+
+
+ Stable assemblages identified by assemblage index:
+
+   1 - Sp O Cpx Cpx Gt 
+   2 - Pl O Cpx ky qtz 
+   3 - Pl O Cpx qtz 
+   4 - Pl O Opx Cpx 
+   5 - Pl Sp O Opx Cpx 
+   6 - Pl Sp O Opx 
+   7 - O Cpx 
+   8 - Sp O Cpx Cpx Gt ky 
+   9 - O Cpx Cpx Gt ky 
+  10 - O Opx Cpx Cpx ky 
+  11 - O Opx Cpx ky 
+  12 - Sp O Opx Cpx 
+  13 - O Opx Cpx 
+  14 - Sp O Cpx Gt ky 
+  15 - Sp O Cpx Gt 
+  16 - O Cpx Gt 
+  17 - O Opx Cpx Gt 
+  18 - Sp O Opx Cpx Gt 
+  19 - O Ring Cpx Cpx Gt Gt 
+  20 - O Cpx Cpx Gt Gt 
+  21 - O Cpx Cpx Gt 
+  22 - O Ring Cpx Cpx Gt 
+  23 - O Ring Cpx Gt 
+  24 - Wus O Cpx Gt 
+  25 - C2/c Wad Ring Cpx Gt Gt 
+  26 - Wad Ring Cpx Cpx Gt Gt 
+  27 - Wad Ring Cpx Gt 
+  28 - Wad Ring Cpx Gt Gt st 
+  29 - Ring Cpx Gt Gt st 
+  30 - Ring Cpx Cpx Gt Gt 
+  31 - Ring Cpx Gt 
+  32 - Ring Ring Cpx Gt Gt st 
+  33 - Ring Cpx Gt st 
+  34 - Wad Cpx Gt 
+  35 - O Wad Cpx Gt 
+  36 - Wus O Wad Cpx Gt 
+  37 - Wus Wad Cpx Gt 
+  38 - Ring Gt st 
+  39 - Wus O Gt 
+  40 - Wad Gt 
+  41 - Wus Wad Gt 
+  42 - Wus Gt 
+  43 - Wad Ring Gt 
+  44 - Ring Gt 
+  45 - Wus Wad Ring Gt 
+  46 - Wus Ring Gt 
+  47 - Wus Ring Cpx Aki Gt st 
+  48 - Ring Cpx Aki Gt Gt st 
+  49 - Ring Gt Gt st 
+  50 - Wus Wus Ring Aki Gt st 
+  51 - Wus Ring Aki Gt NaAl st 
+  52 - Ring Gt Gt NaAl st 
+  53 - Ring Gt ca-pv st 
+  54 - Ring Gt ca-pv 
+  55 - Wus Ring Gt Gt NaAl st 
+  56 - Wus Ring Gt ca-pv 
+  57 - Wus Ring Aki NaAl ca-pv st 
+  58 - Wus Ring Gt NaAl ca-pv st 
+  59 - Wus Ring Gt ca-pv st 
+  60 - Wus Wus Aki NaAl ca-pv st 
+  61 - Wus Gt ca-pv 
+  62 - Wus Aki NaAl ca-pv st 
+  63 - Wus Gt ca-pv st 
+  64 - Wus Aki Gt ca-pv st 
+  65 - Wus Pv Gt ca-pv 
+  66 - Wus Pv Gt ca-pv st 
+  67 - Pl Sp O Cpx Gt ky 
+  68 - O Opx Cpx Cpx Gt ky 
+  69 - Pl O Opx Cpx ky 
+  70 - Pl Pl O Cpx qtz 
+  71 - Sp O Opx Cpx ky 
+  72 - Pl O Cpx 
+  73 - O Cpx Gt ky 
+  74 - O Opx Cpx Gt ky 
+  75 - C2/c O Ring Cpx Gt Gt 
+  76 - Ring Cpx Gt Gt 
+  77 - Wus O Wad Gt 
+  78 - Ring Cpx Aki Gt st 
+  79 - Wus Ring Gt NaAl st 
+  80 - Pv Ring Gt ca-pv 
+  81 - Pl O Cpx Gt ky qtz 
+  82 - O Cpx Cpx ky qtz 
+  83 - Pl O Opx Cpx qtz 
+  84 - Wad Ring Cpx Cpx Gt 
+  85 - Wus Ring Cpx Gt Gt st 
+  86 - Ring Gt NaAl st 
+  87 - Wus Gt NaAl ca-pv st 
+  88 - Pv Ring Gt ca-pv st 
+  89 - Wus Pv Ring Gt ca-pv 
+  90 - O Cpx Cpx Gt ky qtz 
+  91 - Pl Sp O Opx Cpx ky 
+  92 - O Cpx Cpx Gt Gt Gt 
+  93 - Ring Cpx Cpx Gt Gt st 
+  94 - Ring Aki Gt Gt NaAl st 
+  95 - Ring Cpx Gt Gt NaAl st 
+  96 - Wus Ring Gt st 

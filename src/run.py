@@ -1,31 +1,49 @@
-import subprocess
+from model import Mars
+from plot import plot_2d_models
+from datasets import refine
 import pandas as pd
 
-param_distr = {'AUTO': 'Y', 'CONSTCORE': 'N', 'GRAPH': 'N', 'SAVEPIC': 'N', 'save_out': 'distr_test.png'}
-param_integral = {'AUTO': 'Y', 'VISCOSITY': 'Y', 'model_name': 'DW85', 'MELTLAYER': 'Y', 'CREEPFUNCTION': 'N',
-                  'REWRITEFILE': 'N'}
-integral_param = {'crust density': [2.7], 'crust depth': [70],
-                  'core density': [6.1], 'core hydro': [0], 'core sulfur': [0.8],
-                  'viscosity': [1e21], 'andrade': [0.3], 'visc_melt': [1e9]}
+comp = 'LF97'
+areo = 'ATM'
 
-if param_distr['GRAPH'] == 'N' or param_distr['SAVEPIC'] == 'N':
-    param_distr.pop('save_out')
-    if param_distr['GRAPH'] == 'N':
-        param_distr.pop('SAVEPIC')
-if param_integral['VISCOSITY'] == 'N':
-    param_integral.pop('model_name')
-    param_integral.pop('MELTLAYER')
-    param_integral.pop('CREEPFUNCTION')
+t = 'archive/PhD_2nd_year/comparing_chem_models'
+t_ca = t + '_' + comp.lower() + '_' + areo.lower()
+# tar = 'png/comparing_chem_models_' + comp.lower() + '_' + areo.lower() + '.png'
+if False:
+    c = Mars(composition=comp,
+             areoterm=areo,
+             density_crust=3.1,  # 2.7-3.1
+             depth_crust=24,  # 24-72
+             sulfur_core=0.0)
+    c.calculate()
+    print(c.MOI)
+    # c.save_integrals(target=t,
+    #                  rewrite=False,
+    #                  add_composition_name=True)
+if False:
+    for xs in [0.3]:
+        c = Mars(composition=comp,
+                 areoterm=areo,
+                 density_crust=2.7, # 2.7-3.1
+                 depth_crust=72, # 24-72, 2.7: -, 2.8: -, 2.9: -, 3.0: -
+                 sulfur_core=xs)
+        c.ced()
+        for visc_exp in range(21, 17, -1): #21-18
+            print(f'\nCalculation of model with {xs:.1f} FeS and viscosity of exponent of {visc_exp}')
+            c.viscosity = 10**visc_exp
+            c.cid()
+            c.cip()
+            c.save_integrals(target=t,
+                             rewrite=False,
+                             add_composition_name=True,
+                             suffix='')
+            if c.Love_sun.real > 0.182 or c.MOI > 0.3646:
+                break
 
-s = '\n'.join(param_distr.values()) + '\n'
+#plotting
+# plot_2d_models(path=t_ca + '', color_axis=True, compare=True, save=True, target=tar)
+plot_2d_models(path=t_ca + '', color_axis=False, compare=True, save=True, target='png/comparing_chem_models_lf97_atm_bw.png')
 
-DATAs = pd.DataFrame(integral_param)
-DATAs.to_excel("../data/dynamic/input_param.xlsx", index=False)
-
-subprocess.run('python3 model_distribution.py', input=s, shell=True, text=True)
-
-s = '\n'.join(param_integral.values()) + '\n'
-
-subprocess.run('python3 model_integral.py', input=s, shell=True, text=True)
-
-subprocess.run('python3 plots/plot_k2_MOI.py', shell=True)
+# refining
+if False:
+    refine(pd.read_excel('../data/' + t_ca + '.xlsx')).to_excel('../data/' + t_ca + '.xlsx', index=False)

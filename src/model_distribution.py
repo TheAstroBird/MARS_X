@@ -71,6 +71,9 @@ if GRAPH:
             print(s)
         s_out += s
 
+composition = input('\nВведите название используемой химической модели:\n').lower()
+areoterm = input('\nВведите название используемой ареотермы:\n').lower()
+
 # Чтение внешних данных
 
 print('\nПолучение доступа к внешним данным...')
@@ -89,7 +92,7 @@ x_fe = ferrum*55.85/mix
 x_fes = sulf*87.92/mix
 x_feh = hydr*56.86/mix
 
-DATAs_perplex = pd.read_excel('../data/dynamic/mantle_distributions.xlsx')
+DATAs_perplex = pd.read_excel('../data/dynamic/mantle_distributions_' + composition + '_' + areoterm + '.xlsx')
 
 # Построение распределений с глубиной
 
@@ -104,7 +107,7 @@ den_core_const /= den_av
 depth_crust_const /= R_Mars
 rad_core_const /= R_Mars
 P_const = 3*Gravity_const*M_Mars**2/(4*m.pi*R_Mars**4) * 1e-21
-T_exp_const = 3e-5*Gravity_const*M_Mars/5e6/R_Mars**2/1e2
+T_exp_const = 3e-5*Gravity_const*M_Mars/5e2/R_Mars/1e3
 n_grid = 10000 # деление сетки (определяет максимальный шаг)
 t_core_bound = 0.02 # точка остановки в ядре (определяет предел интегрирования, дальше плотность полагается постоянной)
 grid_step = 1 / n_grid
@@ -212,7 +215,7 @@ def den_core_func(t, y):
         den_feh = opt.fsolve(lambda k: pfeh(k)-y[1], 7/den_av)
         return 1/(x_fe/den_fe[0] + x_fes/den_fes[0] + x_feh/den_feh[0])
 def temp_core_func(t, y):
-    return T_exp_const*y[0]*y[2]/t**2
+    return -T_exp_const*y[0]*y[2]/t**2
 
 distr_core = {'density': [den_core_func(distr_numeric['radius'][-1] - grid_step**2,
                                         [distr_numeric['mass'][-1], distr_numeric['pressure'][-1] * (1+grid_step**2),
@@ -478,7 +481,7 @@ if GRAPH:
     velo.text(2200, distr_numeric['shear velocity'][l_planet - 7*l_planet//10], "$v_\mathrm{s}$",
               horizontalalignment='right', verticalalignment='top')
 
-    ax.set(xlim=(0, R_Mars), ylim=(0, 9), xlabel="Радиус, $км$", ylabel="Плотность, $г/см^3$")
+    ax.set(xlim=(0, R_Mars), ylim=(0, 10), xlabel="Радиус, $км$", ylabel="Плотность, $г/см^3$")
     pres.set(ylim=(0, 50), ylabel="Давление, $ГПа$")
     temp.set(ylim=(0, 2500), ylabel="Температура, $К$")
     velo.set(ylim=(0, 25), ylabel="Скорость, $км/с$")
