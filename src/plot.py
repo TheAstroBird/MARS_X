@@ -6,6 +6,7 @@ def plot_2d_models(path: str='dynamic/integral_parameters',
                    x_real: bool=True,
                    y: str='inertia',
                    y_real: bool=True,
+                   color_axis: bool=True,
                    c: str='Chandler_period',
                    c_real: bool=True,
                    compare: bool=False,
@@ -25,6 +26,8 @@ def plot_2d_models(path: str='dynamic/integral_parameters',
     :type y: str
     :param y_real: Defines whether to plot real part, if parameter y is complex, defaults to True
     :type y_real: bool
+    :param color_axis: Defines whether to plot a 'colorbar'-axis, defaults to True
+    :type color_axis: bool
     :param c: The name of parameter from the file to draw on 'colorbar'-axis, defaults to 'Chandler_period'
     :type c: str
     :param c_real: Defines whether to plot real part, if parameter c is complex, defaults to True
@@ -53,16 +56,19 @@ def plot_2d_models(path: str='dynamic/integral_parameters',
 
     cols = 1
     x_figsize = 7
-    if compare:
+    if compare and color_axis:
         cols = 2
         x_figsize = 14
     fig, ax = plt.subplots(1, cols, figsize=(x_figsize, 5))
-    if not compare:
+    if not (compare and color_axis):
         ax = [ax]
 
     sc = []
-    sc.append(ax[0].scatter(x_axis, y_axis, c=c_axis, cmap='plasma'))
-    if compare:
+    if color_axis:
+        sc.append(ax[0].scatter(x_axis, y_axis, c=c_axis, cmap='plasma'))
+    else:
+        sc.append(ax[0].scatter(x_axis, y_axis, c='k'))
+    if color_axis and compare:
         sc.append(ax[1].scatter(x_axis, y_axis, c=c_comp_axis, cmap='plasma'))
     for a, c in zip(ax, sc):
         if x == 'Love_number':
@@ -83,7 +89,8 @@ def plot_2d_models(path: str='dynamic/integral_parameters',
             a.set_ylabel('I/(MR$^2$)')
         a.tick_params(axis='x', labelrotation=45)
         a.grid()
-        fig.colorbar(c, ax=a)
+        if color_axis:
+            fig.colorbar(c, ax=a)
     plt.show()
     if save:
         target = '../data/' + target

@@ -62,7 +62,7 @@ if n == '1':
     print(datas['pressure'][r_i])
     for i in range(l_i):
         for k in datas:
-            if k != 'pressure':
+            if k not in ['pressure', 'temperature']:
                 datas[k][i] = datas[k][r_i] - (r_i - i)*(datas[k][r_i]-datas[k][l_i])/(r_i-l_i)
 pd_datas = pd.DataFrame(datas)
 drop = []

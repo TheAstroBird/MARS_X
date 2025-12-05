@@ -695,6 +695,10 @@ class Mars:
         pass
 
     def cip(mars):
+        """'Calculate Integral Parameters'
+
+        Calculates integral parameters of the model"""
+
         n = 2  # order of the defining Love number
         print('\n')
         print('-----------------------------------------------------')
